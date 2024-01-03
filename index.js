@@ -8,6 +8,12 @@ var { error } = require('./response.js');
 const cors = require('cors');
 const log = require('./logger/index.js');
 const userModel = require('./models/UserModel.js');
+
+const imageRouter = require('./Router/ImageUpload.js');
+const userRouter = require('./Router/userRouter.js');
+const categoryRouter = require('./Router/categoryRouter.js');
+const subcategoryRouter = require('./Router/subCategoryRouter.js');
+	const productRouter = require('./Router/productRouter.js');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -46,6 +52,13 @@ app.use((req, res, next) => {
 		next();
 	}
 });
+
+app.use('/api/v1/image', imageRouter);
+app.use('/api/v1/user', userRouter);
+app.use('/api/v1/category', categoryRouter);
+app.use('/api/v1/subcategory',subcategoryRouter);
+app.use('/api/v1/product',productRouter);
+
 mongoose.connect(process.env.MONGODB_URI);
 mongoose.connection.on('reconnect', () => {
 	log.debug('reconnected with db!');

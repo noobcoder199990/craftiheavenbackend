@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema({
 		required: true,
 		unique: true
 	},
-	categoryId:{
+	category_id:{
 		type:mongoose.Schema.ObjectId,
 		required: true,
 		ref:'category'
@@ -24,11 +24,6 @@ const productSchema = new mongoose.Schema({
 		type: String,
 		required: true
 	},
-	sku_id: {
-		type: String,
-		required: true,
-		unqiue: true
-	}
 }, {
 	timestamps: true
 }); 

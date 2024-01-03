@@ -8,10 +8,10 @@ const photoSchema = new mongoose.Schema({
 	variant_id:{
 		type:mongoose.Schema.ObjectId,
 		required: true,
-		ref:'productVaritation'
+		ref:'product'
 	},
-	is_featured:{
-		type:Boolean
+	name:{
+		type:String
 	}
 }, {
 	timestamps: true

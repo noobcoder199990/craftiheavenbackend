@@ -10,7 +10,7 @@ const subCategorySchema = new mongoose.Schema({
 		required: true,
 		unique: true
 	},
-	categoryId:{
+	category_id:{
 		type:mongoose.Schema.ObjectId,
 		ref: "category",
 		required:true
