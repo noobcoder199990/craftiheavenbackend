@@ -21,7 +21,7 @@ const log = require('../logger/index.js');
 var upload = multer({ dest: './upload/' });
 router
     .route('/create')
-    .post(jwtVerify,
+    .post(
         [
             body('name')
                 .exists({ checkFalsy: true, checkNull: true })
@@ -45,50 +45,60 @@ router
                 .trim(),
 
         ],
-        checkError,upload.single('image'),
+        checkError, 
         async (req, res) => {
             try {
-                let { name, slug, category_id, image } =
+                let { name, slug, category_id, sub_category_id, description,logo,price,discount_percentage } =
                     req.body;
-                log.debug(image,req.file);
-                cloudinary.uploader.upload(image.thumbUrl, {
-                    public_id: "name",
-                    tags: 'name'
-                }, (err, result) => {
-                    if (err) {
-                        console.log(err.message);
-                        return error(res);
-                    } else {
-                        console.log(result);
-                        return success(res, result, 200);
-                    }
-                });
-                // let product = await ProductModel.findOne({ slug: slug });
-                // if (subcategory === null) {
+                let product = await ProductModel.findOne({ slug: slug });
+             log.debug('Ss')
+                if (product === null) {
 
-                //     let product = await ProductModel.create({ slug, name, category_id });
-                //     log.debug(product);
-                //     return success(res, product, 200);
-                // }
-                // else {
-                //     return error(
-                //         res,
-                //         400,
-                //         'Product already exists'
-                //     );
-
-                // }
+                    let product = await ProductModel.create({ slug, name, category_id, sub_category_id, description,price,discount_percentage,logo });
+                    log.debug(product);
+                    return success(res, product, 200);
+                }
+                else {
+                    return error(
+                        res,
+                        400,
+                        'Product already exists'
+                    );
+                }
             }
             catch (err) {
                 return error(res, err.status, err.message)
             }
         }
     );
-router.route('/').get(jwtVerify, async (req, res) => {
+router.route('/').get( async (req, res) => {
     try {
-        const a = await ProductModel.find({});
+        const a = await ProductModel.find({}).populate('logo');
         if (a.length === 0) {
             return error(res, 404, 'No content Found');
+        }
+        return success(res, a, 200);
+    } catch (e) {
+        return error(res);
+    }
+});
+router.route('/filter').post( async (req, res) => {
+    try {
+        const { name, slug, category_id, sub_category_id } = req.body;
+        let obj = {}
+        if (slug) {
+            obj.slug = {$in: slug.split(',')};
+        }
+        if (category_id) {
+            obj.category_id = {$in: category_id.split(',')};
+        }
+         if (sub_category_id) {
+           obj.sub_category_id = { $in: sub_category_id.split(',') };
+        }
+        log.debug(obj)
+        const a = await ProductModel.find(obj).populate('logo');
+        if (a.length === 0) {
+            return success(res, [],200);
         }
         return success(res, a, 200);
     } catch (e) {

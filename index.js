@@ -10,6 +10,7 @@ const log = require('./logger/index.js');
 const userModel = require('./models/UserModel.js');
 
 const imageRouter = require('./Router/ImageUpload.js');
+const photoUpload = require('./Router/photoUpload.js');
 const userRouter = require('./Router/userRouter.js');
 const categoryRouter = require('./Router/categoryRouter.js');
 const subcategoryRouter = require('./Router/subCategoryRouter.js');
@@ -58,7 +59,7 @@ app.use('/api/v1/user', userRouter);
 app.use('/api/v1/category', categoryRouter);
 app.use('/api/v1/subcategory',subcategoryRouter);
 app.use('/api/v1/product',productRouter);
-
+app.use('/api/v1/photo',photoUpload)
 mongoose.connect(process.env.MONGODB_URI);
 mongoose.connection.on('reconnect', () => {
 	log.debug('reconnected with db!');

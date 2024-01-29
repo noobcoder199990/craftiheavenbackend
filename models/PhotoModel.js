@@ -7,7 +7,6 @@ const photoSchema = new mongoose.Schema({
 	},
 	variant_id:{
 		type:mongoose.Schema.ObjectId,
-		required: true,
 		ref:'product'
 	},
 	name:{

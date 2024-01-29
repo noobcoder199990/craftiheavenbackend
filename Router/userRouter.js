@@ -14,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const log = require('../logger');
 router
     .route('/create')
-    .post(jwtVerify,
+    .post(
         [
             body('email')
                 .exists({ checkFalsy: true, checkNull: true })
@@ -85,7 +85,7 @@ router
             }
         }
     );
-router.route('/').get(jwtVerify, async (req, res) => {
+router.route('/').get( async (req, res) => {
     try {
         const a = await userModel.find({});
         if (a.length === 0) {
@@ -98,7 +98,7 @@ router.route('/').get(jwtVerify, async (req, res) => {
 });
 
 router.route('/:id')
-    .delete(jwtVerify, async (req, res) => {
+    .delete( async (req, res) => {
         try {
             const user = await userModel.find({ _id: req.params.id });
             if (user.length === 0) {
@@ -110,7 +110,7 @@ router.route('/:id')
             return error(res);
         }
     })
-    .patch(jwtVerify, async (req, res) => {
+    .patch( async (req, res) => {
         try {
             const { id } = req.params;
             const stu = await userModel.find({

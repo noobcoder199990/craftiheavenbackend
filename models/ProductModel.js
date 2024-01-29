@@ -20,10 +20,22 @@ const productSchema = new mongoose.Schema({
 		required: true,
 		ref:'subCategory'
 	},
+	logo:{
+		type:mongoose.Schema.ObjectId,
+
+		ref:'photo',
+	},
 	description:{
 		type: String,
 		required: true
 	},
+	price: {
+		type: Number,
+		required:true
+	},
+	discount_percentage: {
+	     	type:Number
+	}
 }, {
 	timestamps: true
 }); 

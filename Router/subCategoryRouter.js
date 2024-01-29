@@ -13,7 +13,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const log = require('../logger/index.js');
 router
     .route('/create')
-    .post(jwtVerify,
+    .post(
         [
             body('name')
                 .exists({ checkFalsy: true, checkNull: true })
@@ -55,9 +55,9 @@ router
             }
         }
     );
-router.route('/').get(jwtVerify, async (req, res) => {
+router.route('/').get( async (req, res) => {
     try {
-        const a = await SubCategoryModel.find({});
+        const a = await SubCategoryModel.find({}).populate('category_id');
         if (a.length === 0) {
             return error(res, 404, 'No content Found');
         }
@@ -68,7 +68,7 @@ router.route('/').get(jwtVerify, async (req, res) => {
 });
 
 router.route('/:id')
-    .delete(jwtVerify, async (req, res) => {
+    .delete(async (req, res) => {
         try {
             const user = await userModel.find({ _id: req.params.id });
             if (user.length === 0) {
@@ -80,7 +80,7 @@ router.route('/:id')
             return error(res);
         }
     })
-    .patch(jwtVerify, async (req, res) => {
+    .patch( async (req, res) => {
         try {
             const { id } = req.params;
             const stu = await userModel.find({

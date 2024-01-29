@@ -2,7 +2,7 @@ var express = require('express');
 var jwt = require('jsonwebtoken');
 var { body } = require('express-validator');
 var bcrypt = require('bcrypt');
-const categoryModel = require('../models/CategoryModel');
+const photoModel = require('../models/PhotoModel');
 
 var { success, checkError, error } = require('../response.js');
 const jwtVerify = require('../jwtVerify');
@@ -16,36 +16,21 @@ router
     .route('/create')
     .post(
         [
-            body('name')
+            body('path')
                 .exists({ checkFalsy: true, checkNull: true })
-                .withMessage('name is required ')
-                .trim(),
-            body('slug')
-                .exists({ checkFalsy: true, checkNull: true })
-                .withMessage('slug is required ')
+                .withMessage('path is required ')
                 .trim(),
         ],
         checkError,
         async (req, res) => {
             try {
-                let { name,slug } =
+                let { path, variant_id, name } =
                     req.body;
-          
-                    let category = await categoryModel.findOne({ slug:slug });
-                    if (category === null) {
-                   
-                            let category = await categoryModel.create({ slug,name});
-                            log.debug(category);
-                             return success(res,category,200);
-                    }
-                    else {
-                        return error(
-                            res,
-                            400,
-                            'Category already exists'
-                        );
-                    
-                } 
+
+
+                let photo = await photoModel.create({path, variant_id, name});
+                log.debug(photo);
+                return success(res, photo, 200);
             }
             catch (err) {
                 return error(res, err.status, err.message)
@@ -54,7 +39,7 @@ router
     );
 router.route('/').get( async (req, res) => {
     try {
-        const a = await categoryModel.find({});
+        const a = await photoModel.find({});
         if (a.length === 0) {
             return error(res, 404, 'No content Found');
         }
@@ -67,11 +52,11 @@ router.route('/').get( async (req, res) => {
 router.route('/:id')
     .delete( async (req, res) => {
         try {
-            const user = await userModel.find({ _id: req.params.id });
+            const user = await photoModel.find({ _id: req.params.id });
             if (user.length === 0) {
                 return error(res, 404, 'not found');
             }
-            await userModel.deleteOne({ _id: req.params.id });
+            await photoModel.deleteOne({ _id: req.params.id });
             return success(res, 'Successfully Deleted', 200);
         } catch (err) {
             return error(res);
@@ -80,13 +65,13 @@ router.route('/:id')
     .patch( async (req, res) => {
         try {
             const { id } = req.params;
-            const stu = await userModel.find({
+            const stu = await photoModel.find({
                 _id: id,
             });
             if (stu.length === 0) {
                 return error(res, 404, 'not found');
             }
-            const a = await userModel.findByIdAndUpdate(
+            const a = await photoModel.findByIdAndUpdate(
                 id,
                 {
                     $set: {
@@ -122,7 +107,7 @@ router
         checkError,
         async (req, res, next) => {
             const { email } = req.body;
-            const user = await userModel.findOne({ email: email });
+            const user = await photoModel.findOne({ email: email });
             if (!user) {
                 return error(res, 400, 'Account does not exist');
             }
