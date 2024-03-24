@@ -8,6 +8,24 @@ const jwtVerify = require("../jwtVerify.js");
 const { default: validator } = require("validator");
 var router = express.Router();
 const log = require("../logger/index.js");
+const fetch = require("node-fetch");
+router.route("/whatsapp").get(async (req, res) => {
+  const phoneNumber = req.query.phone;
+  const text = req.query.text;
+
+  const url = `https://api.whatsapp.com/send/?phone=918800589429&text=${encodeURIComponent(
+    "HELLO jsd;lsdjlzsj"
+  )}&type=phone_number&app_absent=0`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.text();
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error sending message");
+  }
+});
 router
   .route("/create")
   .post(

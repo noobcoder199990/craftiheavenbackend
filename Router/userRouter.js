@@ -3,7 +3,12 @@ var jwt = require("jsonwebtoken");
 var { body } = require("express-validator");
 var bcrypt = require("bcrypt");
 const userModel = require("../models/userModel");
-
+const productModel = require("../models/ProductModel.js");
+const Razorpay = require("razorpay");
+var instance = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 var { success, checkError, error } = require("../response.js");
 const jwtVerify = require("../jwtVerify");
 const { default: validator } = require("validator");
@@ -12,7 +17,9 @@ const saltRounds = 10;
 const ACCESS_TOKEN_EXPIRY_IN_MINUTES =
   process.env.ACCESS_TOKEN_EXPIRY_IN_MINUTES;
 const JWT_SECRET = process.env.JWT_SECRET;
+var crypto = require("crypto");
 const log = require("../logger");
+const inviteUserEmail = require("../emailservice/paymentemail.js");
 router
   .route("/create")
   .post(
@@ -91,9 +98,84 @@ router.route("/").get(async (req, res) => {
     return error(res);
   }
 });
-
+router.route("/:id/cart/order").post(jwtVerify, async function add(req, res) {
+  try {
+    const { id } = req.params;
+    const { selectedsingleproduct } = req.body;
+    if (selectedsingleproduct) {
+      const product = await productModel.findById(selectedsingleproduct);
+      let discount = product?.discount_percentage
+        ? (product.price * product?.discount_percentage) / 100
+        : 0;
+      let order = await instance.orders.create({
+        amount: product?.price - discount * 100,
+        currency: "INR",
+        receipt: id,
+      });
+      log.debug(order);
+      return success(res, { order_id: order?.id, amount: product?.price }, 200);
+    }
+    const a = await userModel.findById(id).populate("cart");
+    let cost = 0;
+    for (let product of a.cart) {
+      let currentprice = product.price;
+      let discount = product?.discount_percentage
+        ? (product.price * product?.discount_percentage) / 100
+        : 0;
+      log.debug(currentprice, discount);
+      cost += (currentprice - discount) * 100;
+      log.debug(currentprice, discount);
+    }
+    cost = Math.max(cost, 100);
+    let order = await instance.orders.create({
+      amount: cost,
+      currency: "INR",
+      receipt: id,
+    });
+    log.debug(order);
+    return success(res, { order_id: order?.id, amount: cost }, 200);
+  } catch (err) {
+    log.debug(err);
+    return error(res);
+  }
+});
+router
+  .route("/:id/cart/verifypayment")
+  .post(jwtVerify, async function addOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const user = await userModel.findById(id).populate("cart");
+      const { razorpay_payment_id, order_id, razorpay_signature } = req.body;
+      let generated_signature = crypto
+        .createHmac("SHA256", process.env.RAZORPAY_KEY_SECRET)
+        .update(order_id + "|" + razorpay_payment_id)
+        .digest("Hex");
+      log.debug(generated_signature, razorpay_signature);
+      if (generated_signature === razorpay_signature) {
+        inviteUserEmail(["varghese.va@hotmail.com"], req.user);
+        return success(res, "Success", 200);
+      } else {
+        return error(res, 400, "verification failed");
+      }
+    } catch (err) {
+      log.debug(err);
+      return error(res);
+    }
+  });
 router
   .route("/:id")
+  .get(async (req, res) => {
+    try {
+      const user = await userModel.findById(req.params.id).populate("cart");
+      if (user.length === 0) {
+        return error(res, 404, "not found");
+      }
+      log.debug(user);
+      return success(res, user, 200);
+    } catch (err) {
+      return error(res);
+    }
+  })
   .delete(async (req, res) => {
     try {
       const user = await userModel.find({ _id: req.params.id });
