@@ -24,6 +24,7 @@ app.use(
   cors({ origin: JSON.parse(process.env.ALLOWED_ORIGINS), credentials: true })
 );
 app.use((req, res, next) => {
+  log.debug(req.cookies["jwt"]);
   if (
     (req.cookies && req.cookies["jwt"]) ||
     (req.headers.authorization != undefined &&
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
     if (req.headers.authorization) {
       token = req.headers.authorization.split("Bearer ")[1];
     }
+    log.debug(token, process.env.JWT_SECRET);
     jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
       if (err) {
         res.clearCookie("jwt");

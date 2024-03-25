@@ -98,8 +98,9 @@ router.route("/").get(async (req, res) => {
     return error(res);
   }
 });
-router.route("/:id/cart/order").post(jwtVerify, async function add(req, res) {
+router.route("/:id/cart/order").post(async function add(req, res) {
   try {
+    log.debug(req.user && req.user._id);
     const { id } = req.params;
     const { selectedsingleproduct } = req.body;
     if (selectedsingleproduct) {
@@ -108,7 +109,7 @@ router.route("/:id/cart/order").post(jwtVerify, async function add(req, res) {
         ? (product.price * product?.discount_percentage) / 100
         : 0;
       let order = await instance.orders.create({
-        amount: product?.price - discount * 100,
+        amount: (product?.price - discount) * 100,
         currency: "INR",
         receipt: id,
       });
@@ -241,9 +242,9 @@ router
       let options = {
         expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
       };
-      log.debug(246);
+      log.debug(payload, JWT_SECRET, options);
       const token = jwt.sign(payload, JWT_SECRET, options);
-      log.debug(252);
+      log.debug(token);
 
       bcrypt.compare(
         req.body.password,
@@ -255,10 +256,12 @@ router
           }
 
           if (!result) return error(res, 400, "Incorrect Password");
+          req.user = user;
+          log.debug(token);
           res.cookie("jwt", token, {
             maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
             httpOnly: false,
-            secure: JSON.parse(false),
+            secure: JSON.parse(true),
           });
           log.debug(259);
           const { first_name, last_name, email, _id } = user;
