@@ -1,4 +1,5 @@
 var express = require("express");
+const log = require("../logger");
 var jwt = require("jsonwebtoken");
 var { body } = require("express-validator");
 var bcrypt = require("bcrypt");
@@ -9,6 +10,7 @@ var instance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+log.debug(process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
 var { success, checkError, error } = require("../response.js");
 const jwtVerify = require("../jwtVerify");
 const { default: validator } = require("validator");
@@ -18,7 +20,6 @@ const ACCESS_TOKEN_EXPIRY_IN_MINUTES =
   process.env.ACCESS_TOKEN_EXPIRY_IN_MINUTES;
 const JWT_SECRET = process.env.JWT_SECRET;
 var crypto = require("crypto");
-const log = require("../logger");
 const inviteUserEmail = require("../emailservice/paymentemail.js");
 router
   .route("/create")

@@ -78,10 +78,7 @@ app.use(express.static("website"));
 console.log(JSON.parse(process.env.ALLOWED_ORIGINS));
 
 app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-  })
+  cors({ origin: JSON.parse(process.env.ALLOWED_ORIGINS), credentials: true })
 );
 app.use((req, res, next) => {
   log.debug(req.cookies["jwt"]);
@@ -121,7 +118,7 @@ app.use((req, res, next) => {
     next();
   }
 });
-
+app.use("/", imageRouter);
 app.use("/api/v1/image", imageRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/category", categoryRouter);
