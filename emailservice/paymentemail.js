@@ -42,7 +42,7 @@ function send(email, subject, data, dataType, source) {
   log.debug(params);
   return ses.sendEmail(params).promise((e) => log.debug(e));
 }
-function paymentmail(user, header) {
+function paymentmail(user, header, orderdetail) {
   const url = `${process.env.APP_URL}/login`;
   return `
     ${header}
@@ -59,9 +59,9 @@ function paymentmail(user, header) {
     `;
 }
 
-module.exports = async function inviteUserEmail(toAddress, user) {
+module.exports = async function inviteUserEmail(toAddress, user, orderdetail) {
   try {
-    let data = paymentmail(user, header);
+    let data = paymentmail(user, header, orderdetail);
     await send(
       toAddress,
       "You have order",

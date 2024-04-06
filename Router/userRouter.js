@@ -21,6 +21,7 @@ const ACCESS_TOKEN_EXPIRY_IN_MINUTES =
 const JWT_SECRET = process.env.JWT_SECRET;
 var crypto = require("crypto");
 const inviteUserEmail = require("../emailservice/paymentemail.js");
+const orderModel = require("../models/orderModel.js");
 router
   .route("/create")
   .post(
@@ -44,7 +45,7 @@ router
     checkError,
     async (req, res) => {
       try {
-        let { password, email, last_name, first_name } = req.body;
+        let { password, email, last_name, first_name, address } = req.body;
         try {
           let user = await userModel.findOne({ email: email });
           if (user === null) {
@@ -58,12 +59,13 @@ router
                 }
 
                 hash = hash;
-                log.debug(hash);
+                log.debug(address);
                 const curruser = await userModel.create({
                   email,
                   first_name,
                   last_name,
                   hash,
+                  ...req.body,
                 });
                 if (curruser) {
                   return success(res, curruser, 201);
@@ -134,7 +136,12 @@ router.route("/:id/cart/order").post(async function add(req, res) {
       currency: "INR",
       receipt: id,
     });
-    log.debug(order);
+    let ordercreated = await orderModel.create({
+      user_id: req.user._id,
+      order_id: order.id,
+      amount: cost / 100,
+    });
+    log.debug(ordercreated);
     return success(res, { order_id: order?.id, amount: cost }, 200);
   } catch (err) {
     log.debug(err);
@@ -152,9 +159,15 @@ router
         .createHmac("SHA256", process.env.RAZORPAY_KEY_SECRET)
         .update(order_id + "|" + razorpay_payment_id)
         .digest("Hex");
-      log.debug(generated_signature, razorpay_signature);
       if (generated_signature === razorpay_signature) {
-        inviteUserEmail(["varghese.va@hotmail.com"], req.user);
+        let ordercreated = await orderModel.updateOne(
+          { user_id: req.user._id },
+          {
+            payment_id: razorpay_payment_id,
+            status: "PAID",
+          }
+        );
+        inviteUserEmail(["varghese.va@hotmail.com"], req.user, ordercreated);
         return success(res, "Success", 200);
       } else {
         return error(res, 400, "verification failed");
