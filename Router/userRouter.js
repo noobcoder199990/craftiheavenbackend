@@ -297,6 +297,7 @@ router
             maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
             httpOnly: false,
             secure: JSON.parse(false),
+            SameSite: "None",
           });
           log.debug(259);
           const { first_name, last_name, email, _id } = user;
