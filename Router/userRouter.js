@@ -23,6 +23,70 @@ var crypto = require("crypto");
 const inviteUserEmail = require("../emailservice/paymentemail.js");
 const orderModel = require("../models/orderModel.js");
 router
+  .route("/login")
+  .post(
+    [
+      body("email")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("email id is required for register")
+        .trim()
+        .isEmail()
+        .withMessage("email id is required for register")
+        .normalizeEmail(),
+      body("password")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("password is required for login"),
+    ],
+    checkError,
+    async (req, res, next) => {
+      const { email } = req.body;
+      const user = await userModel.findOne({ email: email });
+      if (!user) {
+        return error(res, 400, "Account does not exist");
+      }
+      let payload = { payload: user._id };
+      let options = {
+        expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+      };
+      log.debug(payload, JWT_SECRET, options);
+      const token = jwt.sign(payload, JWT_SECRET, options);
+      log.debug(token);
+
+      bcrypt.compare(
+        req.body.password,
+        user.hash,
+
+        async (err, result) => {
+          if (err) {
+            return error(res, 400, "some error occured");
+          }
+
+          if (!result) return error(res, 400, "Incorrect Password");
+          req.user = user;
+          log.debug(token);
+          res.cookie("jwt", token, {
+            maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+            httpOnly: false,
+            secure: true,
+            sameSite: "none",
+          });
+          log.debug(259);
+          const { first_name, last_name, email, _id } = user;
+          return success(
+            res,
+            {
+              first_name,
+              last_name,
+              email,
+              _id,
+            },
+            200
+          );
+        }
+      );
+    }
+  );
+router
   .route("/create")
   .post(
     [
@@ -183,11 +247,7 @@ router
             status: "PAID",
           }
         );
-        inviteUserEmail(
-          ["varghese.va@hotmail.com,shijinvargheselj1998@gmail.com"],
-          req.user,
-          ordercreated
-        );
+        inviteUserEmail(["craftiheaven@gmail.com"], req.user, ordercreated);
         return success(res, "Success", 200);
       } else {
         return error(res, 400, "verification failed");
@@ -250,70 +310,5 @@ router
       return error(res);
     }
   });
-
-router
-  .route("/login")
-  .post(
-    [
-      body("email")
-        .exists({ checkFalsy: true, checkNull: true })
-        .withMessage("email id is required for register")
-        .trim()
-        .isEmail()
-        .withMessage("email id is required for register")
-        .normalizeEmail(),
-      body("password")
-        .exists({ checkFalsy: true, checkNull: true })
-        .withMessage("password is required for login"),
-    ],
-    checkError,
-    async (req, res, next) => {
-      const { email } = req.body;
-      const user = await userModel.findOne({ email: email });
-      if (!user) {
-        return error(res, 400, "Account does not exist");
-      }
-      let payload = { payload: user._id };
-      let options = {
-        expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-      };
-      log.debug(payload, JWT_SECRET, options);
-      const token = jwt.sign(payload, JWT_SECRET, options);
-      log.debug(token);
-
-      bcrypt.compare(
-        req.body.password,
-        user.hash,
-
-        async (err, result) => {
-          if (err) {
-            return error(res, 400, "some error occured");
-          }
-
-          if (!result) return error(res, 400, "Incorrect Password");
-          req.user = user;
-          log.debug(token);
-          res.cookie("jwt", token, {
-            maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-            httpOnly: false,
-            secure: true,
-            sameSite: "none",
-          });
-          log.debug(259);
-          const { first_name, last_name, email, _id } = user;
-          return success(
-            res,
-            {
-              first_name,
-              last_name,
-              email,
-              _id,
-            },
-            200
-          );
-        }
-      );
-    }
-  );
 
 module.exports = router;
