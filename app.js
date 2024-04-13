@@ -75,7 +75,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.static("website"));
-console.log(JSON.parse(process.env.ALLOWED_ORIGINS));
 
 app.use(
   cors({ origin: JSON.parse(process.env.ALLOWED_ORIGINS), credentials: true })
@@ -94,6 +93,7 @@ app.use((req, res, next) => {
     log.debug(token, process.env.JWT_SECRET);
     jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
       if (err) {
+        console.log(err);
         res.clearCookie("jwt");
         log.debug(err);
         return error(res, 401, "Unauthorized");
@@ -104,7 +104,6 @@ app.use((req, res, next) => {
           req.user = doc;
           return next();
         }
-        res.clearCookie("jwt");
         // req.headers.authorization = '';
         req.headers.authorization = "";
         req.headers.authorization = "";
