@@ -296,7 +296,7 @@ router
           res.cookie("jwt", token, {
             maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
             httpOnly: false,
-            secure: JSON.parse(false),
+            secure: true,
             sameSite: "none",
           });
           log.debug(259);
