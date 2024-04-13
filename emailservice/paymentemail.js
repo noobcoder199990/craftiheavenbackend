@@ -70,6 +70,6 @@ module.exports = async function inviteUserEmail(toAddress, user, orderdetail) {
       "craftiheaven@gmail.com"
     );
   } catch (err) {
-    log.error(err);
+    console.log(err, "paymentemail->73");
   }
 };
