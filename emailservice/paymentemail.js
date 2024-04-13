@@ -48,7 +48,9 @@ function paymentmail(user, header, orderdetail) {
     ${header}
     <div style="padding: 20px; font-size: 20px;"><div style="margin-top: 30px;">
             <p>Hi </p>
-            <p>You have order from  ${user.email} . Please use following credentials to login.</p>
+            <p>You have order from  ${user.email} ${
+    user?.phone?.phone_no ? `Mobile - ` + user?.phone?.phone_no : ""
+  } ${orderdetail}. Please use following credentials to login.</p>
             <div>
                 <p><strong>Email:</strong> <span>${user.email}</p>
                 </div>
