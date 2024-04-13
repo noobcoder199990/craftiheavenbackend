@@ -247,11 +247,7 @@ router
             status: "PAID",
           }
         );
-        inviteUserEmail(
-          ["varghese.va@hotmail.com,info@craftyheaven.online"],
-          req.user,
-          ordercreated
-        );
+        inviteUserEmail(["info@craftyheaven.online"], req.user, ordercreated);
         return success(res, "Success", 200);
       } else {
         return error(res, 400, "verification failed");
