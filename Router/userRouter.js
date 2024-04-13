@@ -33,6 +33,22 @@ router
         .isEmail()
         .withMessage("email id is required ")
         .normalizeEmail(),
+      body("address.country")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("country is required ")
+        .trim(),
+      body("address.state")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("state is required ")
+        .trim(),
+      body("address.street")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("street is required ")
+        .trim(),
+      body("address.pincode")
+        .exists({ checkFalsy: true, checkNull: true })
+        .withMessage("pincode is required ")
+        .trim(),
       body("password")
         .exists({ checkFalsy: true, checkNull: true })
         .withMessage("password is required ")
@@ -167,7 +183,11 @@ router
             status: "PAID",
           }
         );
-        inviteUserEmail(["varghese.va@hotmail.com"], req.user, ordercreated);
+        inviteUserEmail(
+          ["varghese.va@hotmail.com,shijinvargheselj1998@gmail.com"],
+          req.user,
+          ordercreated
+        );
         return success(res, "Success", 200);
       } else {
         return error(res, 400, "verification failed");
@@ -212,6 +232,7 @@ router
       if (stu.length === 0) {
         return error(res, 404, "not found");
       }
+      log.debug(req.body);
       const a = await userModel.findByIdAndUpdate(
         id,
         {

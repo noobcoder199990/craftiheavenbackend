@@ -38,6 +38,20 @@ const userSchema = new mongoose.Schema(
         type: String,
       },
     },
+    shipping_address: {
+      state: {
+        type: String,
+      },
+      country: {
+        type: String,
+      },
+      street: {
+        type: String,
+      },
+      pincode: {
+        type: String,
+      },
+    },
     hash: {
       type: String,
     },
