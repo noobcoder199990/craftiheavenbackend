@@ -296,7 +296,7 @@ router
           res.cookie("jwt", token, {
             maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
             httpOnly: false,
-            secure: JSON.parse(true),
+            secure: JSON.parse(false),
           });
           log.debug(259);
           const { first_name, last_name, email, _id } = user;
