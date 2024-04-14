@@ -247,6 +247,7 @@ router
             status: "PAID",
           }
         );
+        log.debug(ordercreated);
         inviteUserEmail(["info@craftyheaven.online"], req.user, ordercreated);
         return success(res, "Success", 200);
       } else {
