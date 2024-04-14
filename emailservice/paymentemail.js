@@ -51,7 +51,7 @@ function paymentmail(user, header, orderdetail) {
             <p>You have order from  ${user.email} ${
     user?.phone?.phone_no ? `Mobile - ` + user?.phone?.phone_no : ""
   } </p>
-  ${Object.entries(studentdetails)
+  ${Object.entries(orderdetail)
     .map(([key, value]) => {
       return `<p><strong>${key.split("_").join(" ")}</strong>: ${value}</p>`;
     })
