@@ -196,7 +196,11 @@ router.route("/:id/cart/order").post(async function add(req, res) {
         currency: "INR",
         receipt: id,
       });
-      log.debug(order);
+      let ordercreated = await orderModel.create({
+        user_id: req.user._id,
+        order_id: order.id,
+        amount: product?.price - discount,
+      });
       return success(res, { order_id: order?.id, amount: product?.price }, 200);
     }
     const a = await userModel.findById(id).populate("cart");
