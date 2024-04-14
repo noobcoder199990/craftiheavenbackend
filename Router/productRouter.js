@@ -9,6 +9,7 @@ const { default: validator } = require("validator");
 var router = express.Router();
 const log = require("../logger/index.js");
 const fetch = require("node-fetch");
+const productModel = require("../models/ProductModel.js");
 router.route("/whatsapp").get(async (req, res) => {
   const phoneNumber = req.query.phone;
   const text = req.query.text;
@@ -143,6 +144,74 @@ router.route("/filter").post(async (req, res) => {
     return success(res, a, 200);
   } catch (e) {
     log.debug(e.message);
+    return error(res);
+  }
+});
+router.route("/:id").patch(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      slug,
+      category_id,
+      sub_category_id,
+      logo,
+      description,
+      price,
+      discount_percentage,
+      stock,
+      tags,
+      rating,
+      user_bought,
+      no_of_time_rating_added,
+    } = req.body;
+    const stu = await productModel.findById(id);
+    if (!stu) {
+      return error(res, 404, "not found");
+    }
+    let prevuser = stu?.user_bought ? stu?.user_bought : [];
+    prevuser.push(user_bought);
+    let prevrating = stu?.sumofrating ? stu?.sumofrating : 0;
+    let newrating = stu?.rating;
+    let sumofrating = stu?.sumofrating ? stu?.sumofrating : 0;
+    let noofrating = stu?.no_of_time_rating_added
+      ? stu?.no_of_time_rating_added
+      : 0;
+    if (rating) {
+      let ratingaftermin5 = Math.min(rating, 5);
+      sumofrating += ratingaftermin5;
+      noofrating++;
+      newrating = Math.min(5, sumofrating / noofrating);
+    }
+    log.info(newrating, sumofrating, prevuser.length, 5 / 1);
+    const a = await productModel.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          name,
+          slug,
+          category_id,
+          sub_category_id,
+          no_of_time_rating_added: noofrating,
+          logo,
+          description,
+          sumofrating,
+          price,
+          discount_percentage,
+          stock,
+          tags,
+          rating: newrating,
+          user_bought,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    return success(res, a, 202);
+  } catch (e) {
+    log.error(e);
     return error(res);
   }
 });

@@ -46,6 +46,23 @@ const productSchema = new mongoose.Schema(
         type: "String",
       },
     ],
+    rating: {
+      type: Number,
+      max: 5,
+    },
+    sumofrating: {
+      type: Number,
+    },
+    no_of_time_rating_added: {
+      type: Number,
+    },
+    user_bought: [
+      {
+        type: mongoose.Schema.ObjectId,
+        required: true,
+        ref: "user",
+      },
+    ],
   },
   {
     timestamps: true,

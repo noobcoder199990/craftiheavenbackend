@@ -36,6 +36,9 @@ const orderSchema = new mongoose.Schema(
     item: [
       {
         product: {
+          _id: {
+            type: mongoose.Schema.Types.ObjectId,
+          },
           name: {
             type: String,
             required: true,

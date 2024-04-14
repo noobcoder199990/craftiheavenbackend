@@ -263,9 +263,9 @@ router
       if (generated_signature === razorpay_signature) {
         let order = await orderModel.find({ order_id: order_id });
         order = order[0];
-        if (order) {
-          order.payment_id = razorpay_payment_id;
-          order.status = "PAID";
+        if (order.length) {
+          order[0].payment_id = razorpay_payment_id;
+          order[0].status = "PAID";
           await order.save;
         }
         log.debug(order, order_id);
