@@ -241,7 +241,7 @@ router
         .digest("Hex");
       if (generated_signature === razorpay_signature) {
         let ordercreated = await orderModel.updateOne(
-          { user_id: req.user._id },
+          { order_id: order_id },
           {
             payment_id: razorpay_payment_id,
             status: "PAID",
