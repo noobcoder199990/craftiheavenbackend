@@ -43,7 +43,6 @@ const orderSchema = new mongoose.Schema(
           slug: {
             type: String,
             required: true,
-            unique: true,
           },
           category_id: {
             type: mongoose.Schema.ObjectId,
