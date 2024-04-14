@@ -10,7 +10,6 @@ var instance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
-log.debug(process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
 var { success, checkError, error } = require("../response.js");
 const jwtVerify = require("../jwtVerify");
 const { default: validator } = require("validator");
@@ -186,6 +185,8 @@ router.route("/:id/cart/order").post(async function add(req, res) {
     log.debug(req.user && req.user._id);
     const { id } = req.params;
     const { selectedsingleproduct } = req.body;
+    const a = await userModel.findById(id).populate("cart");
+    let address = a.shipping_address ? a.shipping_address : a.address;
     if (selectedsingleproduct) {
       const product = await productModel.findById(selectedsingleproduct);
       let discount = product?.discount_percentage
@@ -198,6 +199,11 @@ router.route("/:id/cart/order").post(async function add(req, res) {
       });
       let ordercreated = await orderModel.create({
         user_id: req.user._id,
+        address,
+        total_amount_paid: product?.price - discount,
+        item: [
+          { product: product, amountpaidbycustomer: product?.price - discount },
+        ],
         order_id: order.id,
         amount: product?.price - discount,
       });
@@ -208,16 +214,19 @@ router.route("/:id/cart/order").post(async function add(req, res) {
         200
       );
     }
-    const a = await userModel.findById(id).populate("cart");
+
     let cost = 0;
+    let orderitem = [];
     for (let product of a.cart) {
       let currentprice = product.price;
       let discount = product?.discount_percentage
         ? (product.price * product?.discount_percentage) / 100
         : 0;
-      log.debug(currentprice, discount);
       cost += (currentprice - discount) * 100;
-      log.debug(currentprice, discount);
+      orderitem.push({
+        product: product,
+        amountpaidbycustomer: product?.price - discount,
+      });
     }
     cost = Math.max(cost, 100);
     let order = await instance.orders.create({
@@ -229,6 +238,9 @@ router.route("/:id/cart/order").post(async function add(req, res) {
       user_id: req.user._id,
       order_id: order.id,
       amount: cost / 100,
+      total_amount_paid: cost / 100,
+      item: orderitem,
+      address,
     });
     log.debug(ordercreated);
     return success(res, { order_id: order?.id, amount: cost }, 200);
@@ -249,20 +261,18 @@ router
         .update(order_id + "|" + razorpay_payment_id)
         .digest("Hex");
       if (generated_signature === razorpay_signature) {
-        let ordercreated = await orderModel.updateOne(
-          { order_id: order_id },
-          {
-            payment_id: razorpay_payment_id,
-            status: "PAID",
-          },
-          {
-            new: true,
-            runValidators: true,
-          }
-        );
-        log.debug(ordercreated, order_id);
-        inviteUserEmail(["info@craftyheaven.online"], req.user, ordercreated);
-        return success(res, "Success", 200);
+        let order = await orderModel
+          .find({ order_id: order_id })
+          .populate("item.product_id");
+        order = order[0];
+        if (order) {
+          order.payment_id = razorpay_payment_id;
+          order.status = "PAID";
+          await order.save;
+        }
+        log.debug(order, order_id);
+        inviteUserEmail(["info@craftyheaven.online"], req.user, order);
+        return success(res, order, 200);
       } else {
         return error(res, 400, "verification failed");
       }

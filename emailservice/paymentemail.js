@@ -51,11 +51,25 @@ function paymentmail(user, header, orderdetail) {
             <p>You have order from  ${user.email} ${
     user?.phone?.phone_no ? `Mobile - ` + user?.phone?.phone_no : ""
   } </p>
-  ${Object.entries(orderdetail)
+  ${Object.entries(orderdetail?._doc)
     .map(([key, value]) => {
-      return `<p><strong>${key.split("_").join(" ")}</strong>: ${value}</p>`;
+      if (key === "address" || key === "item") {
+        return "";
+      }
+      log.debug(key, value);
+      return `<p><strong>${key}</strong>: ${JSON.stringify(value)}</p>`;
     })
     .join("")}
+     ${Object.entries(orderdetail?._doc?.item)
+       .map(([key, value]) => {
+         return `<p><strong>${key}</strong>: ${JSON.stringify(value)}</p>`;
+       })
+       .join("")}
+     ${Object.entries(orderdetail?._doc?.address)
+       .map(([key, value]) => {
+         return `<p><strong>${key}</strong>: ${JSON.stringify(value)}</p>`;
+       })
+       .join("")}
             <div>
                 <p><strong>Email:</strong> <span>${user.email}</p>
                 </div>
@@ -67,6 +81,7 @@ function paymentmail(user, header, orderdetail) {
 }
 
 module.exports = async function inviteUserEmail(toAddress, user, orderdetail) {
+  console.log(orderdetail);
   try {
     let data = paymentmail(user, header, orderdetail);
     await send(

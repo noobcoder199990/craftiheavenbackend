@@ -29,6 +29,59 @@ const orderSchema = new mongoose.Schema(
         type: String,
       },
     },
+    total_amount_paid: {
+      type: Number,
+      required: true,
+    },
+    item: [
+      {
+        product: {
+          name: {
+            type: String,
+            required: true,
+          },
+          slug: {
+            type: String,
+            required: true,
+            unique: true,
+          },
+          category_id: {
+            type: mongoose.Schema.ObjectId,
+            required: true,
+            ref: "category",
+          },
+          sub_category_id: {
+            type: mongoose.Schema.ObjectId,
+            required: true,
+            ref: "subCategory",
+          },
+          description: {
+            type: String,
+            required: true,
+          },
+          price: {
+            type: Number,
+            required: true,
+          },
+          discount_percentage: {
+            type: Number,
+          },
+          stock: {
+            type: Number,
+            required: true,
+          },
+          tags: [
+            {
+              type: "String",
+            },
+          ],
+        },
+        amountpaidbycustomer: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
     status: {
       type: String,
       enum: ["PAYMENT_PENDING", "PAID", "PAYMENT_FAILED"],
