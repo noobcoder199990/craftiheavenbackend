@@ -50,7 +50,12 @@ function paymentmail(user, header, orderdetail) {
             <p>Hi </p>
             <p>You have order from  ${user.email} ${
     user?.phone?.phone_no ? `Mobile - ` + user?.phone?.phone_no : ""
-  } ${orderdetail}. Please use following credentials to login.</p>
+  } </p>
+  ${Object.entries(studentdetails)
+    .map(([key, value]) => {
+      return `<p><strong>${key.split("_").join(" ")}</strong>: ${value}</p>`;
+    })
+    .join("")}
             <div>
                 <p><strong>Email:</strong> <span>${user.email}</p>
                 </div>
