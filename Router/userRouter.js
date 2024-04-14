@@ -201,7 +201,12 @@ router.route("/:id/cart/order").post(async function add(req, res) {
         order_id: order.id,
         amount: product?.price - discount,
       });
-      return success(res, { order_id: order?.id, amount: product?.price }, 200);
+      log.debug(ordercreated);
+      return success(
+        res,
+        { order_id: order?.id, amount: product?.price - discount },
+        200
+      );
     }
     const a = await userModel.findById(id).populate("cart");
     let cost = 0;
@@ -249,9 +254,13 @@ router
           {
             payment_id: razorpay_payment_id,
             status: "PAID",
+          },
+          {
+            new: true,
+            runValidators: true,
           }
         );
-        log.debug(ordercreated);
+        log.debug(ordercreated, order_id);
         inviteUserEmail(["info@craftyheaven.online"], req.user, ordercreated);
         return success(res, "Success", 200);
       } else {
