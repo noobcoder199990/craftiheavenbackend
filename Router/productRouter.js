@@ -9,6 +9,7 @@ const { default: validator } = require("validator");
 var router = express.Router();
 const log = require("../logger/index.js");
 const fetch = require("node-fetch");
+const issuperadmin = require("../superadmincheck.js");
 const productModel = require("../models/ProductModel.js");
 router.route("/whatsapp").get(async (req, res) => {
   const phoneNumber = req.query.phone;
@@ -30,6 +31,7 @@ router.route("/whatsapp").get(async (req, res) => {
 router
   .route("/create")
   .post(
+    issuperadmin,
     [
       body("name")
         .exists({ checkFalsy: true, checkNull: true })

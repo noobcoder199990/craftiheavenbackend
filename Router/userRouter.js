@@ -21,70 +21,198 @@ const JWT_SECRET = process.env.JWT_SECRET;
 var crypto = require("crypto");
 const inviteUserEmail = require("../emailservice/paymentemail.js");
 const orderModel = require("../models/orderModel.js");
-router
-  .route("/login")
-  .post(
-    [
-      body("email")
-        .exists({ checkFalsy: true, checkNull: true })
-        .withMessage("email id is required for register")
-        .trim()
-        .isEmail()
-        .withMessage("email id is required for register")
-        .normalizeEmail(),
-      body("password")
-        .exists({ checkFalsy: true, checkNull: true })
-        .withMessage("password is required for login"),
-    ],
-    checkError,
-    async (req, res, next) => {
-      const { email } = req.body;
-      const user = await userModel.findOne({ email: email });
-      if (!user) {
-        return error(res, 400, "Account does not exist");
-      }
-      let payload = { payload: user._id };
-      let options = {
-        expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-      };
-      log.debug(payload, JWT_SECRET, options);
-      const token = jwt.sign(payload, JWT_SECRET, options);
-      log.debug(token);
+const S3 = require("aws-sdk/clients/s3");
+const s3 = new S3({
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  signatureVersion: "v4",
+});
+const randomGenerator = () => {
+  return Math.random().toString(36).substring(2, 10);
+};
 
-      bcrypt.compare(
-        req.body.password,
-        user.hash,
-
-        async (err, result) => {
-          if (err) {
-            return error(res, 400, "some error occured");
-          }
-
-          if (!result) return error(res, 400, "Incorrect Password");
-          req.user = user;
-          log.debug(token);
-          res.cookie("jwt", token, {
-            maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-            httpOnly: false,
-            secure: true,
-            sameSite: "none",
-          });
-          log.debug(259);
-          const { first_name, last_name, email, _id } = user;
-          return success(
-            res,
-            {
-              first_name,
-              last_name,
-              email,
-              _id,
-            },
-            200
-          );
-        }
-      );
+async function PublicUploadFile(req, res) {
+  const { files, directory, private } = req.body;
+  let nameSplit = files.name.split(".");
+  const ext = nameSplit[nameSplit.length - 1];
+  nameSplit.pop();
+  const name = nameSplit.join(".");
+  const key = `public/${directory}/${name}-${randomGenerator()}.${ext}`;
+  Bucket = !private
+    ? process.env.AWS_BUCKET
+    : process.env.AWS_PRIVATE_BUCKET_NAME;
+  const fileParams = {
+    Bucket,
+    Key: decodeURIComponent(key),
+    ContentType: files.type,
+  };
+  const ans = await s3
+    .getSignedUrlPromise("putObject", fileParams)
+    .then((data) => data)
+    .catch((err) => {
+      return error(res);
+    });
+  return ans;
+}
+router.route("/").get(async (req, res) => {
+  try {
+    const a = await userModel.find({}).lean();
+    if (a.length === 0) {
+      return error(res, 404, "No content Found");
     }
-  );
+    let finaluser = {};
+    Object.keys(a).map((data) => {
+      if (data === "hash") {
+        return " ";
+      }
+      finaluser[`${data}`] = a[data];
+    });
+    return success(res, finaluser, 200);
+  } catch (e) {
+    return error(res);
+  }
+});
+router.route("/filter").post(async (req, res, next) => {
+  const { email, phone, loginByOtp } = req.body;
+  let user;
+  if (email) {
+    user = await userModel.findOne({ email: email });
+  } else if (phone) {
+    user = await userModel.findOne({ phone: phone });
+  }
+  if (!user) {
+    return error(res, 400, "Account does not exist");
+  }
+  let payload = { payload: user?._id };
+  let options = {
+    expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+  };
+  const token = jwt.sign(payload, JWT_SECRET, options);
+  if (loginByOtp) {
+    req.user = user;
+    res.cookie("jwt", token, {
+      maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+      httpOnly: false,
+      secure: true,
+      sameSite: "none",
+    });
+    const { first_name, last_name, email, _id } = user;
+    return success(
+      res,
+      {
+        first_name,
+        last_name,
+        email,
+        _id,
+      },
+      200
+    );
+  } else {
+    bcrypt.compare(
+      req.body.password,
+      user.hash,
+
+      async (err, result) => {
+        if (err) {
+          return error(res, 400, "some error occured");
+        }
+
+        if (!result) return error(res, 400, "Incorrect Password");
+        req.user = user;
+        log.debug(token);
+        res.cookie("jwt", token, {
+          maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+          httpOnly: false,
+          secure: true,
+          sameSite: "none",
+        });
+        log.debug(259);
+        const { first_name, last_name, email, _id } = user;
+        return success(
+          res,
+          {
+            first_name,
+            last_name,
+            email,
+            _id,
+          },
+          200
+        );
+      }
+    );
+  }
+});
+router.route("/login").post(async (req, res, next) => {
+  const { email, loginByOtp, phone } = req.body;
+  let user;
+  if (email) {
+    user = await userModel.findOne({ email: email });
+  } else if (phone) {
+    user = await userModel.findOne({ phone: phone });
+  }
+  if (!user) {
+    return error(res, 400, "Account does not exist");
+  }
+  let payload = { payload: user?._id };
+  let options = {
+    expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+  };
+  const token = jwt.sign(payload, JWT_SECRET, options);
+  if (loginByOtp) {
+    req.user = user;
+    res.cookie("jwt", token, {
+      maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+      httpOnly: false,
+      secure: true,
+      sameSite: "none",
+    });
+    const { first_name, last_name, email, _id } = user;
+    return success(
+      res,
+      {
+        first_name,
+        last_name,
+        email,
+        _id,
+      },
+      200
+    );
+  } else {
+    bcrypt.compare(
+      req.body.password,
+      user.hash,
+
+      async (err, result) => {
+        if (err) {
+          return error(res, 400, "some error occured");
+        }
+
+        if (!result) return error(res, 400, "Incorrect Password");
+        req.user = user;
+        log.debug(token);
+        res.cookie("jwt", token, {
+          maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
+          httpOnly: false,
+          secure: true,
+          sameSite: "none",
+        });
+        log.debug(259);
+        const { first_name, last_name, email, _id } = user;
+        return success(
+          res,
+          {
+            first_name,
+            last_name,
+            email,
+            _id,
+          },
+          200
+        );
+      }
+    );
+  }
+});
 router
   .route("/create")
   .post(
@@ -169,17 +297,79 @@ router
       }
     }
   );
-router.route("/").get(async (req, res) => {
+
+router.route("/getsignedurl").post(async function add(req, res) {
   try {
-    const a = await userModel.find({});
-    if (a.length === 0) {
-      return error(res, 404, "No content Found");
-    }
-    return success(res, a, 200);
-  } catch (e) {
+    const a = await PublicUploadFile(req, res);
+    return success(res, a, 201);
+  } catch (err) {
+    log.error(err);
     return error(res);
   }
 });
+router
+  .route("/:id")
+  .get(async (req, res) => {
+    try {
+      const user = await userModel
+        .findById(req.params.id)
+        .populate("cart")
+        .lean();
+      if (user.length === 0) {
+        return error(res, 404, "not found");
+      }
+      let finaluser = {};
+      Object.keys(user).map((data) => {
+        if (data === "hash") {
+          return " ";
+        }
+        finaluser[`${data}`] = user[data];
+      });
+      return success(res, finaluser, 200);
+    } catch (err) {
+      log.error(err);
+      return error(res);
+    }
+  })
+  .delete(async (req, res) => {
+    try {
+      const user = await userModel.find({ _id: req.params.id });
+      if (user.length === 0) {
+        return error(res, 404, "not found");
+      }
+      await userModel.deleteOne({ _id: req.params.id });
+      return success(res, "Successfully Deleted", 200);
+    } catch (err) {
+      return error(res);
+    }
+  })
+  .patch(async (req, res) => {
+    try {
+      const { id } = req.params;
+      const stu = await userModel.find({
+        _id: id,
+      });
+      if (stu.length === 0) {
+        return error(res, 404, "not found");
+      }
+      log.debug(req.body);
+      const a = await userModel.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            ...req.body,
+          },
+        },
+        {
+          new: true,
+        }
+      );
+
+      return success(res, a, 202);
+    } catch (e) {
+      return error(res);
+    }
+  });
 router.route("/:id/cart/order").post(async function add(req, res) {
   try {
     log.debug(req.user && req.user._id);
@@ -276,59 +466,6 @@ router
       }
     } catch (err) {
       log.debug(err);
-      return error(res);
-    }
-  });
-router
-  .route("/:id")
-  .get(async (req, res) => {
-    try {
-      const user = await userModel.findById(req.params.id).populate("cart");
-      if (user.length === 0) {
-        return error(res, 404, "not found");
-      }
-      log.debug(user);
-      return success(res, user, 200);
-    } catch (err) {
-      return error(res);
-    }
-  })
-  .delete(async (req, res) => {
-    try {
-      const user = await userModel.find({ _id: req.params.id });
-      if (user.length === 0) {
-        return error(res, 404, "not found");
-      }
-      await userModel.deleteOne({ _id: req.params.id });
-      return success(res, "Successfully Deleted", 200);
-    } catch (err) {
-      return error(res);
-    }
-  })
-  .patch(async (req, res) => {
-    try {
-      const { id } = req.params;
-      const stu = await userModel.find({
-        _id: id,
-      });
-      if (stu.length === 0) {
-        return error(res, 404, "not found");
-      }
-      log.debug(req.body);
-      const a = await userModel.findByIdAndUpdate(
-        id,
-        {
-          $set: {
-            ...req.body,
-          },
-        },
-        {
-          new: true,
-        }
-      );
-
-      return success(res, a, 202);
-    } catch (e) {
       return error(res);
     }
   });

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const userSchema = new mongoose.Schema(
   {
     first_name: {
@@ -10,12 +9,8 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
     phone: {
-      country: {
-        type: Number,
-      },
-      phone_no: {
-        type: Number,
-      },
+      type: String,
+      unique: true,
     },
     cart: [{ type: mongoose.Schema.ObjectId, ref: "product" }],
     email: {
