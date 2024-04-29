@@ -58,7 +58,7 @@ router
           console.error("Error:", error);
         });
     } catch (err) {
-      log.debug(err);
+      log.error(err);
       return error(res);
     }
   });

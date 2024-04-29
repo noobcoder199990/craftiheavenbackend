@@ -41,7 +41,6 @@ router
             name,
             category_id,
           });
-          log.debug(subcategory);
           return success(res, subcategory, 200);
         } else {
           return error(res, 400, "SubCategory already exists");

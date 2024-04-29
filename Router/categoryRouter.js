@@ -34,7 +34,6 @@ router
         let category = await categoryModel.findOne({ slug: slug });
         if (category === null) {
           let category = await categoryModel.create({ slug, name });
-          log.debug(category);
           return success(res, category, 200);
         } else {
           return error(res, 400, "Category already exists");

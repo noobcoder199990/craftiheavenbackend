@@ -28,7 +28,6 @@ router
         let { path, variant_id, name } = req.body;
 
         let photo = await photoModel.create({ path, variant_id, name });
-        log.debug(photo);
         return success(res, photo, 200);
       } catch (err) {
         return error(res, err.status, err.message);
@@ -37,7 +36,6 @@ router
   );
 router.route("/filter").post(async (req, res) => {
   try {
-    log.debug(req.body);
     let photo = await photoModel.find(req.body);
     return success(res, photo, 200);
   } catch (err) {

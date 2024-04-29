@@ -120,14 +120,12 @@ router.route("/filter").post(async (req, res, next) => {
 
         if (!result) return error(res, 400, "Incorrect Password");
         req.user = user;
-        log.debug(token);
         res.cookie("jwt", token, {
           maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
           httpOnly: false,
           secure: true,
           sameSite: "none",
         });
-        log.debug(259);
         const { first_name, last_name, email, _id } = user;
         return success(
           res,
@@ -190,14 +188,12 @@ router.route("/login").post(async (req, res, next) => {
 
         if (!result) return error(res, 400, "Incorrect Password");
         req.user = user;
-        log.debug(token);
         res.cookie("jwt", token, {
           maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
           httpOnly: false,
           secure: true,
           sameSite: "none",
         });
-        log.debug(259);
         const { first_name, last_name, email, _id } = user;
         return success(
           res,
@@ -266,7 +262,6 @@ router
                 }
 
                 hash = hash;
-                log.debug(address);
                 const curruser = await userModel.create({
                   email,
                   first_name,
@@ -282,7 +277,6 @@ router
               return error(res);
             }
           } else {
-            log.debug(user, "dk");
             return error(
               res,
               400,
@@ -352,7 +346,6 @@ router
       if (stu.length === 0) {
         return error(res, 404, "not found");
       }
-      log.debug(req.body);
       const a = await userModel.findByIdAndUpdate(
         id,
         {
@@ -372,7 +365,6 @@ router
   });
 router.route("/:id/cart/order").post(async function add(req, res) {
   try {
-    log.debug(req.user && req.user._id);
     const { id } = req.params;
     const { selectedsingleproduct } = req.body;
     const a = await userModel.findById(id).populate("cart");
@@ -397,7 +389,6 @@ router.route("/:id/cart/order").post(async function add(req, res) {
         order_id: order.id,
         amount: product?.price - discount,
       });
-      log.debug(ordercreated);
       return success(
         res,
         { order_id: order?.id, amount: product?.price - discount },
@@ -432,10 +423,9 @@ router.route("/:id/cart/order").post(async function add(req, res) {
       item: orderitem,
       address,
     });
-    log.debug(ordercreated);
     return success(res, { order_id: order?.id, amount: cost }, 200);
   } catch (err) {
-    log.debug(err);
+    log.error(err);
     return error(res);
   }
 });
@@ -458,14 +448,13 @@ router
           order[0].status = "PAID";
           await order.save;
         }
-        log.debug(order, order_id);
         inviteUserEmail(["info@craftyheaven.online"], req.user, order);
         return success(res, order, 200);
       } else {
         return error(res, 400, "verification failed");
       }
     } catch (err) {
-      log.debug(err);
+      log.error(err);
       return error(res);
     }
   });

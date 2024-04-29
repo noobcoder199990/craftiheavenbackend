@@ -134,8 +134,6 @@ router.route("/filter").post(async (req, res) => {
       obj.sub_category_id = { $in: sub_category_id.split(",") };
       arrforor.push(obj);
     }
-    log.debug(obj);
-
     const a =
       arrforor.length > 0
         ? await ProductModel.find({ $or: arrforor }).populate("logo")
@@ -145,7 +143,7 @@ router.route("/filter").post(async (req, res) => {
     }
     return success(res, a, 200);
   } catch (e) {
-    log.debug(e.message);
+    log.error(e.message);
     return error(res);
   }
 });

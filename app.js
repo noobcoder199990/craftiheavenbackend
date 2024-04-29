@@ -44,7 +44,7 @@ app.use((req, res, next) => {
       if (err) {
         console.log(err);
         res.clearCookie("jwt");
-        log.debug(err);
+        log.error(err);
         return error(res, 401, "Unauthorized");
       }
       try {
@@ -76,11 +76,11 @@ app.use("/api/v1/photo", photoUpload);
 app.use("/api/v1/rating", ratingRouter);
 mongoose.connect(process.env.MONGODB_URI);
 mongoose.connection.on("reconnect", () => {
-  log.debug("reconnected with db!");
+  log.info("reconnected with db!");
 });
 
 mongoose.connection.on("disconnected", () => {
-  log.debug(`DB disconnected ${new Date()}`);
+  log.info(`DB disconnected ${new Date()}`);
 });
 
 var server = http.createServer(app);
@@ -129,7 +129,7 @@ function onError(error) {
 function onListening() {
   var addr = server.address();
   var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
-  log.debug("Listening on " + bind);
+  log.info("Listening on " + bind);
 }
 
 module.exports = app;

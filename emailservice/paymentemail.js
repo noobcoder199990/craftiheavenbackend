@@ -12,7 +12,7 @@ const header = `<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'/><met
 <span style='padding: 20px; font-size: 20px;'><strong>Payment has been initiated</strong></span></div></div>`;
 
 function send(email, subject, data, dataType, source) {
-  log.debug(email);
+  log.info(email);
   let body = {};
   if (dataType === "HTML")
     body = {
@@ -39,8 +39,8 @@ function send(email, subject, data, dataType, source) {
     },
     ConfigurationSetName: "email",
   };
-  log.debug(params);
-  return ses.sendEmail(params).promise((e) => log.debug(e));
+  log.info(params);
+  return ses.sendEmail(params).promise((e) => log.info(e));
 }
 function paymentmail(user, header, orderdetail) {
   const url = `${process.env.APP_URL}/login`;
@@ -56,7 +56,6 @@ function paymentmail(user, header, orderdetail) {
       if (key === "address" || key === "item") {
         return "";
       }
-      log.debug(key, value);
       return `<p><strong>${key}</strong>: ${JSON.stringify(value)}</p>`;
     })
     .join("")}
