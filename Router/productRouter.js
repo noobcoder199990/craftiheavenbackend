@@ -59,16 +59,11 @@ router.route("/filter").post(async (req, res) => {
     if (slug) {
       obj.slug = slug;
     }
-    if (name) {
-      obj.name = { $in: name };
-    }
-    if (tags) {
-      obj.tags = tags;
+
+    if (tags?.length) {
+      obj.tags = { $in: tags };
     }
     let arr = [];
-    if (textindexsearch && textindexsearch !== "") {
-      arr.push({ $match: { $text: { $search: textindexsearch } } });
-    }
     if (obj && Object.keys(obj).length > 0) {
       arr.push({ $match: { $or: [obj] } });
     }
@@ -85,7 +80,6 @@ router.route("/filter").post(async (req, res) => {
         $unwind: "$logo",
       }
     );
-    log.debug(arr);
     let ans = await productModel.aggregate(arr);
     if (ans.length == 0) {
       return error(res, 404, "No Content");
@@ -220,72 +214,89 @@ router.route("/").get(async (req, res) => {
 //   }
 // });
 
-router.route("/:id").patch(async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      name,
-      slug,
-      category_id,
-      sub_category_id,
-      logo,
-      description,
-      price,
-      discount_percentage,
-      stock,
-      tags,
-      rating,
-      user_bought,
-      no_of_time_rating_added,
-    } = req.body;
-    const stu = await productModel.findById(id);
-    if (!stu) {
-      return error(res, 404, "not found");
-    }
-    let prevuser = stu?.user_bought ? stu?.user_bought : [];
-    prevuser.push(user_bought);
-    let prevrating = stu?.sumofrating ? stu?.sumofrating : 0;
-    let newrating = stu?.rating;
-    let sumofrating = stu?.sumofrating ? stu?.sumofrating : 0;
-    let noofrating = stu?.no_of_time_rating_added
-      ? stu?.no_of_time_rating_added
-      : 0;
-    if (rating) {
-      let ratingaftermin5 = Math.min(rating, 5);
-      sumofrating += ratingaftermin5;
-      noofrating++;
-      newrating = Math.min(5, sumofrating / noofrating);
-    }
-    log.info(newrating, sumofrating, prevuser.length, 5 / 1);
-    const a = await productModel.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          name,
-          slug,
-          category_id,
-          sub_category_id,
-          no_of_time_rating_added: noofrating,
-          logo,
-          description,
-          sumofrating,
-          price,
-          discount_percentage,
-          stock,
-          tags,
-          rating: newrating,
-          user_bought,
-        },
-      },
-      {
-        new: true,
+router
+  .route("/:id")
+  .patch(async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        name,
+        slug,
+        category_id,
+        sub_category_id,
+        logo,
+        description,
+        price,
+        discount_percentage,
+        stock,
+        tags,
+        rating,
+        user_bought,
+        no_of_time_rating_added,
+      } = req.body;
+      const stu = await productModel.findById(id);
+      if (!stu) {
+        return error(res, 404, "not found");
       }
-    );
+      let prevuser = stu?.user_bought ? stu?.user_bought : [];
+      prevuser.push(user_bought);
+      let prevrating = stu?.sumofrating ? stu?.sumofrating : 0;
+      let newrating = stu?.rating;
+      let sumofrating = stu?.sumofrating ? stu?.sumofrating : 0;
+      let noofrating = stu?.no_of_time_rating_added
+        ? stu?.no_of_time_rating_added
+        : 0;
+      if (rating) {
+        let ratingaftermin5 = Math.min(rating, 5);
+        sumofrating += ratingaftermin5;
+        noofrating++;
+        newrating = Math.min(5, sumofrating / noofrating);
+      }
+      log.info(newrating, sumofrating, prevuser.length, 5 / 1);
+      const a = await productModel.findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            name,
+            slug,
+            category_id,
+            sub_category_id,
+            no_of_time_rating_added: noofrating,
+            logo,
+            description,
+            sumofrating,
+            price,
+            discount_percentage,
+            stock,
+            tags,
+            rating: newrating,
+            user_bought,
+          },
+        },
+        {
+          new: true,
+        }
+      );
 
-    return success(res, a, 202);
-  } catch (e) {
-    log.error(e);
-    return error(res);
-  }
-});
+      return success(res, a, 202);
+    } catch (e) {
+      log.error(e);
+      return error(res);
+    }
+  })
+  .delete(async (req, res) => {
+    try {
+      const { id } = req.params;
+      const prod = await productModel.findById(id);
+      if (prod.length === 0) {
+        return error(res, 404, "not found");
+      }
+      await productModel.findByIdAndDelete(id);
+      const newprod = await productModel.find();
+      return success(res, newprod, 202);
+    } catch (e) {
+      log.error(e);
+      return error(res);
+    }
+  });
 module.exports = router;
