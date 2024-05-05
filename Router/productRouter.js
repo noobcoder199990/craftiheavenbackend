@@ -37,6 +37,7 @@ router.route("/filter").post(async (req, res) => {
       discount_percentage,
       tags,
       rating,
+      textindexsearch,
       slug,
       category_id,
       subcategory_id,
@@ -64,14 +65,12 @@ router.route("/filter").post(async (req, res) => {
     if (tags) {
       obj.tags = tags;
     }
-    let filteredData = [];
-    log.debug(textindexstring);
     let arr = [];
-    if (textindexstring && textindexstring !== "") {
-      arr.push({ $match: { $text: { $search: textindexstring } } });
+    if (textindexsearch && textindexsearch !== "") {
+      arr.push({ $match: { $text: { $search: textindexsearch } } });
     }
     if (obj && Object.keys(obj).length > 0) {
-      arr.push({ $match: obj });
+      arr.push({ $match: { $or: [obj] } });
     }
     arr.push(
       {
@@ -86,6 +85,7 @@ router.route("/filter").post(async (req, res) => {
         $unwind: "$logo",
       }
     );
+    log.debug(arr);
     let ans = await productModel.aggregate(arr);
     if (ans.length == 0) {
       return error(res, 404, "No Content");
