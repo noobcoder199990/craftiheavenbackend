@@ -11,6 +11,7 @@ const log = require("../logger/index.js");
 const fetch = require("node-fetch");
 const issuperadmin = require("../superadmincheck.js");
 const productModel = require("../models/ProductModel.js");
+const Mongoose = require("mongoose");
 router.route("/whatsapp").get(async (req, res) => {
   const phoneNumber = req.query.phone;
   const text = req.query.text;
@@ -26,6 +27,73 @@ router.route("/whatsapp").get(async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send("Error sending message");
+  }
+});
+router.route("/filter").post(async (req, res) => {
+  try {
+    const {
+      name,
+      price,
+      discount_percentage,
+      tags,
+      rating,
+      slug,
+      category_id,
+      subcategory_id,
+    } = req.body;
+    let obj = {};
+    let textindexstring = "";
+    if (category_id && category_id !== "") {
+      let categoryid = category_id
+        .split(",")
+        .map((e) => new Mongoose.Types.ObjectId(e));
+      obj.category_id = { $in: categoryid };
+    }
+    if (subcategory_id && subcategory_id !== "") {
+      let subcategoryid = subcategory_id
+        .split(",")
+        .map((e) => new Mongoose.Types.ObjectId(e));
+      obj.sub_category_id = { $in: subcategoryid };
+    }
+    if (slug) {
+      obj.slug = slug;
+    }
+    if (name) {
+      obj.name = { $in: name };
+    }
+    if (tags) {
+      obj.tags = tags;
+    }
+    let filteredData = [];
+    log.debug(textindexstring);
+    let arr = [];
+    if (textindexstring && textindexstring !== "") {
+      arr.push({ $match: { $text: { $search: textindexstring } } });
+    }
+    if (obj && Object.keys(obj).length > 0) {
+      arr.push({ $match: obj });
+    }
+    arr.push(
+      {
+        $lookup: {
+          from: "photos",
+          localField: "logo",
+          foreignField: "_id",
+          as: "logo",
+        },
+      },
+      {
+        $unwind: "$logo",
+      }
+    );
+    let ans = await productModel.aggregate(arr);
+    if (ans.length == 0) {
+      return error(res, 404, "No Content");
+    }
+    return success(res, ans, 200);
+  } catch (e) {
+    log.error(e);
+    return error(res);
   }
 });
 router
@@ -72,15 +140,18 @@ router
           sub_category_id,
           description,
           logo,
+          tags,
           price,
           discount_percentage,
           stock,
         } = req.body;
         let product = await ProductModel.findOne({ slug: slug });
         if (product === null) {
+          log.debug(tags, name);
           let product = await ProductModel.create({
             slug,
             name,
+            tags,
             category_id,
             sub_category_id,
             description,
@@ -89,7 +160,8 @@ router
             logo,
             stock,
           });
-          return success(res, product, 200);
+          log.debug("ss", tags);
+          return success(res, product, 300);
         } else {
           return error(res, 400, "Product already exists");
         }
@@ -109,44 +181,45 @@ router.route("/").get(async (req, res) => {
     return error(res);
   }
 });
-router.route("/filter").post(async (req, res) => {
-  try {
-    const { name, slug, category_id, sub_category_id } = req.body;
-    let obj = {};
-    let arrforor = [];
-    if (slug) {
-      obj = {};
-      obj.slug = { $in: slug.split(",") };
-      arrforor.push(obj);
-    }
-    if (name) {
-      obj = {};
-      obj.name = { $in: name.split(",") };
-      arrforor.push(obj);
-    }
-    if (category_id) {
-      obj = {};
-      obj.category_id = { $in: category_id.split(",") };
-      arrforor.push(obj);
-    }
-    if (sub_category_id) {
-      obj = {};
-      obj.sub_category_id = { $in: sub_category_id.split(",") };
-      arrforor.push(obj);
-    }
-    const a =
-      arrforor.length > 0
-        ? await ProductModel.find({ $or: arrforor }).populate("logo")
-        : await ProductModel.find().populate("logo");
-    if (a.length === 0) {
-      return success(res, [], 200);
-    }
-    return success(res, a, 200);
-  } catch (e) {
-    log.error(e.message);
-    return error(res);
-  }
-});
+// router.route("/filter").post(async (req, res) => {
+//   try {
+//     const { name, slug, category_id, sub_category_id } = req.body;
+//     let obj = {};
+//     let arrforor = [];
+//     if (slug) {
+//       obj = {};
+//       obj.slug = { $in: slug.split(",") };
+//       arrforor.push(obj);
+//     }
+//     if (name) {
+//       obj = {};
+//       obj.name = { $in: name.split(",") };
+//       arrforor.push(obj);
+//     }
+//     if (category_id) {
+//       obj = {};
+//       obj.category_id = { $in: category_id.split(",") };
+//       arrforor.push(obj);
+//     }
+//     if (sub_category_id) {
+//       obj = {};
+//       obj.sub_category_id = { $in: sub_category_id.split(",") };
+//       arrforor.push(obj);
+//     }
+//     const a =
+//       arrforor.length > 0
+//         ? await ProductModel.find({ $or: arrforor }).populate("logo")
+//         : await ProductModel.find().populate("logo");
+//     if (a.length === 0) {
+//       return success(res, [], 200);
+//     }
+//     return success(res, a, 200);
+//   } catch (e) {
+//     log.error(e.message);
+//     return error(res);
+//   }
+// });
+
 router.route("/:id").patch(async (req, res) => {
   try {
     const { id } = req.params;
