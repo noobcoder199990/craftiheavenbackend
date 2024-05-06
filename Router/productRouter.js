@@ -155,11 +155,12 @@ router
             stock,
           });
           log.debug("ss", tags);
-          return success(res, product, 300);
+          return success(res, product, 200);
         } else {
           return error(res, 400, "Product already exists");
         }
       } catch (err) {
+        log.error(err);
         return error(res, err.status, err.message);
       }
     }

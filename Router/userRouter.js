@@ -74,71 +74,31 @@ router.route("/").get(async (req, res) => {
   }
 });
 router.route("/filter").post(async (req, res, next) => {
-  const { email, phone, loginByOtp } = req.body;
-  let user;
-  if (email) {
-    user = await userModel.findOne({ email: email });
-  } else if (phone) {
-    user = await userModel.findOne({ phone: phone });
-  }
-  if (!user) {
-    return error(res, 400, "Account does not exist");
-  }
-  let payload = { payload: user?._id };
-  let options = {
-    expiresIn: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-  };
-  const token = jwt.sign(payload, JWT_SECRET, options);
-  if (loginByOtp) {
-    req.user = user;
-    res.cookie("jwt", token, {
-      maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-      httpOnly: false,
-      secure: true,
-      sameSite: "none",
-    });
-    const { first_name, last_name, email, _id } = user;
+  try {
+    const { email, phone, loginByOtp } = req.body;
+    let user;
+    if (email) {
+      user = await userModel.findOne({ email: email });
+    } else if (phone) {
+      user = await userModel.findOne({ phone: phone });
+    }
+    if (!user) {
+      return error(res, 400, "Account does not exist");
+    }
+    const { first_name, last_name, _id } = user;
     return success(
       res,
       {
         first_name,
         last_name,
-        email,
+        email: user.email,
         _id,
       },
       200
     );
-  } else {
-    bcrypt.compare(
-      req.body.password,
-      user.hash,
-
-      async (err, result) => {
-        if (err) {
-          return error(res, 400, "some error occured");
-        }
-
-        if (!result) return error(res, 400, "Incorrect Password");
-        req.user = user;
-        res.cookie("jwt", token, {
-          maxAge: ACCESS_TOKEN_EXPIRY_IN_MINUTES * 3600000,
-          httpOnly: false,
-          secure: true,
-          sameSite: "none",
-        });
-        const { first_name, last_name, email, _id } = user;
-        return success(
-          res,
-          {
-            first_name,
-            last_name,
-            email,
-            _id,
-          },
-          200
-        );
-      }
-    );
+  } catch (err) {
+    log.debug(err);
+    return error(res);
   }
 });
 router.route("/login").post(async (req, res, next) => {
